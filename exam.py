@@ -1,16 +1,15 @@
-import json
-import random
-from pade.acl.messages import ACLMessage
-from pade.misc.utility import display_message, start_loop
-from pade.core.agent import Agent
-from pade.acl.aid import AID
-rand_num=random.randint(0,3)
-
 class Professor(Agent):
     def __init__(self, aid):
         super(Professor, self).__init__(aid=aid, debug=False)
         self.mark_counter = 0
-    
+        self.questions = ["Для чего используется динамическая математическая модель?",
+                          "Для чего нужна статическая математическая модель?",
+                          "Что такое база знаний?",
+                          "Что такое модель?",
+                          "Что делает система диагностики?",
+                          "Что такое экспертиза?"
+                          ]
+
     def on_start(self):
         super().on_start()
         self.call_later(10, self.send_proposal)
@@ -23,6 +22,14 @@ class Professor(Agent):
         message.add_receiver(AID(name="student@localhost:8080"))
         self.send(message)
 
+    def send_accept(self, q_num):
+        display_message(self.aid.localname, self.questions[q_num - 1])
+        message = ACLMessage()
+        message.set_performative(ACLMessage.ACCEPT_PROPOSAL)
+        message.set_content(json.dumps({'questions': q_num}))
+        message.add_receiver(AID(name="student@localhost:8080"))
+        self.send(message)
+
     def react(self, message):
         super(Professor, self).react(message)
 
@@ -30,55 +37,30 @@ class Professor(Agent):
             content = json.loads(message.content)
             q_ask = content['questions']
             if q_ask == 1:
-                display_message(self.aid.localname, "Для чего используется динамическая математическая модель?")
-                message = ACLMessage()
-                message.set_performative(ACLMessage.ACCEPT_PROPOSAL)
-                message.set_content(json.dumps({'questions': q_ask}))
-                message.add_receiver(AID(name="student@localhost:8080"))
-                self.send(message)
+                self.send_accept(q_ask)
             elif q_ask == 2:
                 flag = content['flag']
                 if flag:
                     self.mark_counter += 1 
-                display_message(self.aid.localname, "Для чего нужна статическая математическая модель?")
-                message = ACLMessage()
-                message.set_performative(ACLMessage.ACCEPT_PROPOSAL)
-                message.set_content(json.dumps({'questions': q_ask}))
-                message.add_receiver(AID(name="student@localhost:8080"))
-                self.send(message)
+                self.send_accept(q_ask)
                 
             elif q_ask == 3:
                 flag = content['flag']
                 if flag:
                     self.mark_counter += 1
-                display_message(self.aid.localname, "Что такое база знаний?")
-                message = ACLMessage()
-                message.set_performative(ACLMessage.ACCEPT_PROPOSAL)
-                message.set_content(json.dumps({'questions': q_ask}))
-                message.add_receiver(AID(name="student@localhost:8080"))
-                self.send(message)
+                self.send_accept(q_ask)
                 
             elif q_ask == 4:
                 flag = content['flag']
                 if flag:
                     self.mark_counter += 1
-                display_message(self.aid.localname, "Что такое модель?")
-                message = ACLMessage()
-                message.set_performative(ACLMessage.ACCEPT_PROPOSAL)
-                message.set_content(json.dumps({'questions': q_ask}))
-                message.add_receiver(AID(name="student@localhost:8080"))
-                self.send(message)
+                self.send_accept(q_ask)
                 
             elif q_ask == 5:
                 flag = content['flag']
                 if flag:
                     self.mark_counter += 1
-                display_message(self.aid.localname, "Что делает система диагностики?")
-                message = ACLMessage()
-                message.set_performative(ACLMessage.ACCEPT_PROPOSAL)
-                message.set_content(json.dumps({'questions': q_ask}))
-                message.add_receiver(AID(name="student@localhost:8080"))
-                self.send(message)
+                self.send_accept(q_ask)
                 
             elif q_ask == 6:
                 flag = content['flag']
@@ -99,12 +81,7 @@ class Professor(Agent):
                 message.add_receiver(AID(name="student@localhost:8080"))
                 self.send(message)
             elif q_ask == 7:
-                message = ACLMessage()
-                display_message(self.aid.localname, "Что такое экспертиза?")
-                message.set_performative(ACLMessage.ACCEPT_PROPOSAL)
-                message.set_content(json.dumps({'questions': q_ask}))
-                message.add_receiver(AID(name="student@localhost:8080"))
-                self.send(message)
+                self.send_accept(q_ask - 1)
             elif q_ask == 8:
                 flag = content['flag']
                 message = ACLMessage()
@@ -115,8 +92,6 @@ class Professor(Agent):
                 message.add_receiver(AID(name="student@localhost:8080"))
                 self.send(message)
 
-                
-
         elif message.performative == ACLMessage.REJECT_PROPOSAL:
             message = ACLMessage()
             display_message(self.aid.localname, "Давайте вашу зачетку.")
@@ -124,7 +99,6 @@ class Professor(Agent):
             message.add_receiver(AID(name="student@localhost:8080"))
             self.send(message)
 
-            
 
 class Student(Agent):
     def __init__(self, aid):
@@ -146,11 +120,12 @@ class Student(Agent):
             q_num = content['questions']
                 
             if q_num == 1:
-                rand_status = self.ready[random.randint(0,1)]
+                rand_status = self.ready[random.randint(0, 1)]
                 message = ACLMessage()
                 q_num += 1
                 if rand_status == 'Да':
-                    display_message(self.aid.localname, "Она используется для оценки сценариев, которые меняются во времени.")
+                    display_message(self.aid.localname, "Она используется для оценки сценариев,"
+                                                        " которые меняются во времени.")
                     message.set_content(json.dumps({'flag': True, 'questions': q_num}))
                 else:
                     display_message(self.aid.localname, "Я не знаю ответ на данный вопрос.")
@@ -159,7 +134,7 @@ class Student(Agent):
                 message.add_receiver(AID(name="professor@localhost:8090"))
                 self.send(message)
             elif q_num == 2:
-                rand_status = self.ready[random.randint(0,1)]
+                rand_status = self.ready[random.randint(0, 1)]
                 message = ACLMessage()
                 q_num += 1
                 if rand_status == 'Да':
@@ -172,11 +147,12 @@ class Student(Agent):
                 message.add_receiver(AID(name="professor@localhost:8090"))
                 self.send(message)
             elif q_num == 3:
-                rand_status = self.ready[random.randint(0,1)]
+                rand_status = self.ready[random.randint(0, 1)]
                 message = ACLMessage()
                 q_num += 1
                 if rand_status == 'Да':
-                    display_message(self.aid.localname, "Это знания, необходимые для понимания, формулирования и решения задач.")
+                    display_message(self.aid.localname, "Это знания, необходимые для понимания,"
+                                                        " формулирования и решения задач.")
                     message.set_content(json.dumps({'flag': True, 'questions': q_num}))
                 else:
                     display_message(self.aid.localname, "Я не знаю ответ на данный вопрос.")
@@ -185,7 +161,7 @@ class Student(Agent):
                 message.add_receiver(AID(name="professor@localhost:8090"))
                 self.send(message)
             elif q_num == 4:
-                rand_status = self.ready[random.randint(0,1)]
+                rand_status = self.ready[random.randint(0, 1)]
                 message = ACLMessage()
                 q_num += 1
                 if rand_status == 'Да':
@@ -198,11 +174,12 @@ class Student(Agent):
                 message.add_receiver(AID(name="professor@localhost:8090"))
                 self.send(message)
             elif q_num == 5:
-                rand_status = self.ready[random.randint(0,1)]
+                rand_status = self.ready[random.randint(0, 1)]
                 message = ACLMessage()
                 q_num += 1
                 if rand_status == 'Да':
-                    display_message(self.aid.localname, "Включает диагнеостику в медицине, электронике, механике и программном обеспечении.")
+                    display_message(self.aid.localname, "Включает диагнеостику в медицине, электронике,"
+                                                        " механике и программном обеспечении.")
                     message.set_content(json.dumps({'flag': True, 'questions': q_num}))
                 else:
                     display_message(self.aid.localname, "Я не знаю ответ на данный вопрос.")
@@ -211,7 +188,7 @@ class Student(Agent):
                 message.add_receiver(AID(name="professor@localhost:8090"))
                 self.send(message)
             elif q_num == 6:
-                rand_status = self.ready[random.randint(0,1)]
+                rand_status = self.ready[random.randint(0, 1)]
                 message = ACLMessage()
                 if rand_status == 'Да':
                     display_message(self.aid.localname, "Абсолютно устраивает.")
@@ -224,11 +201,12 @@ class Student(Agent):
                 message.add_receiver(AID(name="professor@localhost:8090"))
                 self.send(message)
             elif q_num == 7:
-                rand_status = self.ready[random.randint(0,1)]
+                rand_status = self.ready[random.randint(0, 1)]
                 message = ACLMessage()
                 q_num += 1
                 if rand_status == 'Да':
-                    display_message(self.aid.localname, "Обширное, специфическое знание для решения задачи, извлеченное из обучения, чтения и опыта.")
+                    display_message(self.aid.localname, "Обширное, специфическое знание для решения задачи,"
+                                                        " извлеченное из обучения, чтения и опыта.")
                     message.set_performative(ACLMessage.ACCEPT_PROPOSAL)
                     message.set_content(json.dumps({'flag': True, 'questions': q_num}))
                 else:
